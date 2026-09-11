@@ -1,0 +1,616 @@
+{
+  "info": {
+    "_postman_id": "cataloguesync-api-v1",
+    "name": "CatalogueSync API",
+    "description": "Complete API collection for CatalogueSync — a multi-vendor catalog and inventory engine.\n\n## Quick Start\n1. Set the `baseUrl` collection variable to `http://localhost:3000` (default).\n2. Run **Auth → Issue Vendor Token** — it auto-saves to `vendorToken`.\n3. Run **Auth → Issue Buyer Token** — saves to `buyerToken`.\n4. Work through folders in order: Vendors → Catalog Write → Catalog Read → Ordering.\n\n## Collection Variables\n| Variable | Purpose |\n|---|---|\n| `baseUrl` | API base URL |\n| `vendorToken` | HMAC token for vendor-scoped write requests |\n| `buyerToken` | HMAC token for buyer operations |\n| `vendorId` | Set after creating a vendor |\n| `categoryId` | Set after creating a category |\n| `listingId` | Set after creating the first listing |\n| `listing2Id` | Set after creating the second listing |\n| `orderId` | Set after placing an order |",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:3000", "type": "string" },
+    { "key": "vendorToken",  "value": "",                     "type": "string" },
+    { "key": "buyerToken",   "value": "",                     "type": "string" },
+    { "key": "vendorId",     "value": "",                     "type": "string" },
+    { "key": "vendor2Id",    "value": "",                     "type": "string" },
+    { "key": "categoryId",   "value": "",                     "type": "string" },
+    { "key": "listingId",    "value": "",                     "type": "string" },
+    { "key": "listing2Id",   "value": "",                     "type": "string" },
+    { "key": "orderId",      "value": "",                     "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "description": "Stateless HMAC token issuance. Tokens encode actorId, optional vendorId, and roles. Signed with ACTOR_TOKEN_SECRET from .env (default: dev-secret-change-me).",
+      "item": [
+        {
+          "name": "Issue Vendor Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('vendorToken', json.token);",
+                  "    pm.test('Vendor token issued and saved to vendorToken', () => pm.expect(json.token).to.be.a('string').and.include('.'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorId\": \"actor-vendor-001\",\n  \"vendorId\": \"{{vendorId}}\",\n  \"roles\": [\"vendor\"]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/auth/token", "host": ["{{baseUrl}}"], "path": ["v1", "auth", "token"] }
+          }
+        },
+        {
+          "name": "Issue Buyer Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('buyerToken', json.token);",
+                  "    pm.test('Buyer token issued and saved to buyerToken', () => pm.expect(json.token).to.be.a('string'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorId\": \"buyer-alice-001\",\n  \"roles\": [\"buyer\"]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/auth/token", "host": ["{{baseUrl}}"], "path": ["v1", "auth", "token"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏪 Vendors",
+      "description": "Vendor and category management. Platform-internal in v1 — no auth guard on these endpoints.",
+      "item": [
+        {
+          "name": "Create Vendor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('vendorId', json.id);",
+                  "    pm.test('vendorId saved: ' + json.id, () => pm.expect(json.id).to.be.a('string'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Electronics\",\n  \"slug\": \"acme-electronics\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/vendors", "host": ["{{baseUrl}}"], "path": ["v1", "vendors"] }
+          }
+        },
+        {
+          "name": "Create Second Vendor (for multi-vendor order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('vendor2Id', json.id);",
+                  "    pm.test('vendor2Id saved: ' + json.id, () => pm.expect(json.id).to.be.a('string'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Beta Gadgets\",\n  \"slug\": \"beta-gadgets\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/vendors", "host": ["{{baseUrl}}"], "path": ["v1", "vendors"] }
+          }
+        },
+        {
+          "name": "Get Vendor by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/vendors/{{vendorId}}", "host": ["{{baseUrl}}"], "path": ["v1", "vendors", "{{vendorId}}"] }
+          }
+        },
+        {
+          "name": "Suspend Vendor",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SUSPENDED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/vendors/{{vendorId}}", "host": ["{{baseUrl}}"], "path": ["v1", "vendors", "{{vendorId}}"] }
+          }
+        },
+        {
+          "name": "Reactivate Vendor",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/vendors/{{vendorId}}", "host": ["{{baseUrl}}"], "path": ["v1", "vendors", "{{vendorId}}"] }
+          }
+        },
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('categoryId', json.id);",
+                  "    pm.test('categoryId saved: ' + json.id, () => pm.expect(json.id).to.be.a('string'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Consumer Electronics\",\n  \"slug\": \"consumer-electronics\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/categories", "host": ["{{baseUrl}}"], "path": ["v1", "categories"] }
+          }
+        },
+        {
+          "name": "List All Categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/categories", "host": ["{{baseUrl}}"], "path": ["v1", "categories"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "✏️ Catalog Write",
+      "description": "Vendor-authenticated listing and inventory management.\n\nRequires vendorToken — run Auth → Issue Vendor Token first (after setting vendorId).\n\nAll requests send: Authorization: Bearer {{vendorToken}}",
+      "item": [
+        {
+          "name": "Create Listing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('listingId', json.id);",
+                  "    pm.test('listingId saved: ' + json.id, () => pm.expect(json.id).to.be.a('string'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{vendorToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"sku\": \"ACME-WIDGET-001\",\n  \"title\": \"Acme Wireless Headphones Pro\",\n  \"description\": \"Premium noise-cancelling wireless headphones with 40-hour battery life.\",\n  \"priceCents\": 14999,\n  \"currency\": \"USD\",\n  \"initialOnHandQuantity\": 50\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/listings", "host": ["{{baseUrl}}"], "path": ["v1", "listings"] }
+          }
+        },
+        {
+          "name": "Create Second Listing (for multi-vendor order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('listing2Id', json.id);",
+                  "    pm.test('listing2Id saved: ' + json.id, () => pm.expect(json.id).to.be.a('string'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{vendorToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"sku\": \"ACME-CABLE-002\",\n  \"title\": \"USB-C to USB-C Braided Cable 2m\",\n  \"description\": \"Fast-charge 240W braided cable.\",\n  \"priceCents\": 2499,\n  \"currency\": \"USD\",\n  \"initialOnHandQuantity\": 200\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/listings", "host": ["{{baseUrl}}"], "path": ["v1", "listings"] }
+          }
+        },
+        {
+          "name": "Update Listing",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{vendorToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Acme Wireless Headphones Pro — Limited Edition\",\n  \"priceCents\": 17999\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/listings/{{listingId}}", "host": ["{{baseUrl}}"], "path": ["v1", "listings", "{{listingId}}"] }
+          }
+        },
+        {
+          "name": "Update Listing — Change Category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{vendorToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/listings/{{listingId}}", "host": ["{{baseUrl}}"], "path": ["v1", "listings", "{{listingId}}"] }
+          }
+        },
+        {
+          "name": "Adjust Stock (set on-hand quantity)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{vendorToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"onHandQuantity\": 75\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/listings/{{listingId}}/adjust-stock", "host": ["{{baseUrl}}"], "path": ["v1", "listings", "{{listingId}}", "adjust-stock"] }
+          }
+        },
+        {
+          "name": "Adjust Stock — Reduce to near-zero (stress test prereq)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{vendorToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"onHandQuantity\": 3\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/listings/{{listingId}}/adjust-stock", "host": ["{{baseUrl}}"], "path": ["v1", "listings", "{{listingId}}", "adjust-stock"] }
+          }
+        },
+        {
+          "name": "Delist Listing",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/v1/listings/{{listingId}}", "host": ["{{baseUrl}}"], "path": ["v1", "listings", "{{listingId}}"] }
+          }
+        },
+        {
+          "name": "❌ No Auth Token (expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"sku\": \"NO-AUTH-SKU\",\n  \"title\": \"Should Fail — no token\",\n  \"priceCents\": 999\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/listings", "host": ["{{baseUrl}}"], "path": ["v1", "listings"] }
+          }
+        },
+        {
+          "name": "❌ Buyer Token on Vendor Endpoint (expect 401 — no vendorId claim)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"sku\": \"BUYER-CANNOT-CREATE\",\n  \"title\": \"Should Fail\",\n  \"priceCents\": 999\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/listings", "host": ["{{baseUrl}}"], "path": ["v1", "listings"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📖 Catalog Read",
+      "description": "Public read-model endpoints served via the catalogsync_read Postgres role. No auth required. Redis cache-aside operates transparently behind these endpoints.",
+      "item": [
+        {
+          "name": "Browse All Listings",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/catalog", "host": ["{{baseUrl}}"], "path": ["v1", "catalog"] }
+          }
+        },
+        {
+          "name": "Browse Listings — Filter by Category",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/catalog?category={{categoryId}}&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "catalog"],
+              "query": [
+                { "key": "category", "value": "{{categoryId}}" },
+                { "key": "page",     "value": "1" },
+                { "key": "limit",    "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Browse Listings — Filter by Price Range",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/catalog?minPrice=1000&maxPrice=20000",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "catalog"],
+              "query": [
+                { "key": "minPrice", "value": "1000" },
+                { "key": "maxPrice", "value": "20000" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Browse Listings — Category + Price Range + Pagination",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/catalog?category={{categoryId}}&minPrice=5000&maxPrice=30000&page=1&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "catalog"],
+              "query": [
+                { "key": "category", "value": "{{categoryId}}" },
+                { "key": "minPrice", "value": "5000" },
+                { "key": "maxPrice", "value": "30000" },
+                { "key": "page",     "value": "1" },
+                { "key": "limit",    "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Listing by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/catalog/{{listingId}}", "host": ["{{baseUrl}}"], "path": ["v1", "catalog", "{{listingId}}"] }
+          }
+        },
+        {
+          "name": "Get Listings by Vendor",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/catalog/vendor/{{vendorId}}?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "catalog", "vendor", "{{vendorId}}"],
+              "query": [
+                { "key": "page",  "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛒 Ordering",
+      "description": "Multi-vendor order placement via the order saga.\n\nThe saga decomposes each cart into per-vendor vendor_suborders, reserves stock atomically per vendor (CAS against the write-side inventory table), and compensates (releases) all successful reservations if any vendor fails. All-or-nothing in v1.",
+      "item": [
+        {
+          "name": "Place Single-Vendor Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('orderId', json.id);",
+                  "    pm.test('orderId saved: ' + json.id, () => pm.expect(json.id).to.be.a('string'));",
+                  "}",
+                  "pm.test('Order has a status', () => {",
+                  "    pm.expect(json.status).to.be.oneOf(['CONFIRMED', 'FAILED', 'PENDING']);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerRef\": \"buyer-alice-001\",\n  \"items\": [\n    {\n      \"listingId\": \"{{listingId}}\",\n      \"quantity\": 2\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/orders", "host": ["{{baseUrl}}"], "path": ["v1", "orders"] }
+          }
+        },
+        {
+          "name": "Place Multi-Vendor Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('multiVendorOrderId', json.id);",
+                  "pm.test('Multi-vendor order response received', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerRef\": \"buyer-bob-002\",\n  \"items\": [\n    {\n      \"listingId\": \"{{listingId}}\",\n      \"quantity\": 1\n    },\n    {\n      \"listingId\": \"{{listing2Id}}\",\n      \"quantity\": 3\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/orders", "host": ["{{baseUrl}}"], "path": ["v1", "orders"] }
+          }
+        },
+        {
+          "name": "Place Order — Insufficient Stock (expect FAILED + compensation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.test('Order is FAILED due to insufficient stock', () => {",
+                  "    pm.expect(json.status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerRef\": \"buyer-charlie-003\",\n  \"items\": [\n    {\n      \"listingId\": \"{{listingId}}\",\n      \"quantity\": 99999\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/orders", "host": ["{{baseUrl}}"], "path": ["v1", "orders"] }
+          }
+        },
+        {
+          "name": "Place Order — Empty Items (expect 400 validation error)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerRef\": \"buyer-alice-001\",\n  \"items\": []\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/v1/orders", "host": ["{{baseUrl}}"], "path": ["v1", "orders"] }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/orders/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["v1", "orders", "{{orderId}}"] }
+          }
+        },
+        {
+          "name": "Get Order — Non-existent ID (expect 404)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/v1/orders/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["v1", "orders", "00000000-0000-0000-0000-000000000000"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "❤️ Health",
+      "description": "Liveness and readiness probes. Readiness checks all three Postgres roles (catalogsync_write, catalogsync_read, catalogsync_projector) and Redis independently. Returns 503 if any component is down.",
+      "item": [
+        {
+          "name": "Liveness — GET /health/live",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status is ok', () => pm.expect(pm.response.json().status).to.eql('ok'));",
+                  "pm.test('uptime is a number', () => pm.expect(pm.response.json().uptime).to.be.a('number'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health/live", "host": ["{{baseUrl}}"], "path": ["health", "live"] }
+          }
+        },
+        {
+          "name": "Readiness — GET /health/ready",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var body = pm.response.json();",
+                  "pm.test('Status 200 — all components up', () => pm.response.to.have.status(200));",
+                  "pm.test('status is ready', () => pm.expect(body.status).to.eql('ready'));",
+                  "pm.test('catalogsync_write is up',     () => pm.expect(body.components.catalogsync_write.status).to.eql('up'));",
+                  "pm.test('catalogsync_read is up',      () => pm.expect(body.components.catalogsync_read.status).to.eql('up'));",
+                  "pm.test('catalogsync_projector is up', () => pm.expect(body.components.catalogsync_projector.status).to.eql('up'));",
+                  "pm.test('redis is up',                 () => pm.expect(body.components.redis.status).to.eql('up'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health/ready", "host": ["{{baseUrl}}"], "path": ["health", "ready"] }
+          }
+        }
+      ]
+    }
+  ]
+}

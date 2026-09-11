@@ -1,18 +1,18 @@
 .PHONY: up down migrate dev projector sweep test test-integration lint
 
 up:
-	docker compose up -d
-	@until docker compose exec -T postgres pg_isready -U catalogsync >/dev/null 2>&1; do sleep 1; done
-	@until docker compose exec -T redis redis-cli ping >/dev/null 2>&1; do sleep 1; done
+	docker-compose up -d
+	@until docker-compose exec -T postgres pg_isready -h localhost -U catalogsync >/dev/null 2>&1; do sleep 1; done
+	@until docker-compose exec -T redis redis-cli ping >/dev/null 2>&1; do sleep 1; done
 	@echo "applying migrations and creating the three application roles..."
 	@$(MAKE) migrate
 
 migrate:
-	PGPASSWORD=catalogsync psql -h localhost -U catalogsync -d catalogsync \
-		-f prisma/migrations/0001_init/migration.sql
+	docker-compose exec -T postgres psql -U catalogsync -d catalogsync \
+		< prisma/migrations/0001_init/migration.sql
 
 down:
-	docker compose down
+	docker-compose down
 
 # Runs src/main.ts — does not exist yet, see docs/CURSOR_CONTEXT.md.
 dev:

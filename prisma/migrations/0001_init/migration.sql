@@ -236,7 +236,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
     vendors, categories, product_listings, inventory,
     customer_orders, vendor_suborders, order_line_items, saga_steps
     TO catalogsync_write;
-GRANT SELECT ON outbox_events TO catalogsync_write;
+GRANT INSERT, SELECT ON outbox_events TO catalogsync_write;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO catalogsync_write;
 
 -- The read-side application pool: SELECT only, and only on the
