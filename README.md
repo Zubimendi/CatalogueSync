@@ -48,16 +48,6 @@ and `docs/RESEARCH.md` for the prior art this design is grounded in.
   `docs/RESEARCH.md`, `docs/TESTING.md`, `docs/STORY.md`,
   `docs/CURSOR_CONTEXT.md`.
 
-## What's intentionally left for you
-
-**No application code exists yet.** `docs/CURSOR_CONTEXT.md` is the
-complete, numbered build spec — every module, every command/query/event
-handler, every service, in dependency order. Start there. The two things
-to build and prove first, in this order: the atomic stock-reservation
-update (`src/catalog-write`) under real concurrency, and the order-
-splitting saga's compensation logic (`src/ordering`) — see
-`docs/TESTING.md` §1–2.
-
 ## Quickstart (once built)
 
 ```bash
