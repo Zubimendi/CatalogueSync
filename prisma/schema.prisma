@@ -1,0 +1,21 @@
+// Prisma config only — datasource and generator blocks. The actual
+// models are NOT defined here yet; they belong in
+// docs/CURSOR_CONTEXT.md §2's build spec and should mirror
+// prisma/migrations/0001_init/migration.sql exactly once written (the
+// migration is the source of truth for schema, the same discipline as
+// every other Prisma-backed project in this portfolio).
+//
+// Note: because this project uses three separate Postgres roles
+// (docs/ARCHITECTURE.md §4), a single Prisma Client instance generated
+// from one `datasource` block may not be the right shape for all three
+// connections — see docs/CURSOR_CONTEXT.md §1 for the explicit decision
+// this requires before writing any models here.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_WRITE")
+}
