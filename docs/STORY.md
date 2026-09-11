@@ -230,22 +230,6 @@ cost (inventory stays held a little longer than ideal after a crash, not
 forever) in exchange for not needing to solve the harder problem before
 this version can ship at all.
 
-### What's honestly not done
-
-This project is handed off at the architecture layer, deliberately —
-every mechanism above is fully specified down to the exact SQL and the
-exact module boundaries, and the tests that would prove each claim are
-written out with the same precision. None of it exists as running code
-yet. A few things are named as real, current limitations rather than
-solved: all-or-nothing order fulfillment (a single out-of-stock vendor
-fails the entire cart, even the parts every other vendor could have
-shipped) is a genuine product trade-off, not a technical inevitability,
-and partial fulfillment is real, meaningfully harder future work, not a
-small tweak. The database-role separation protects against accidental
-cross-boundary access, not against someone who actually has a
-compromised write-role credential — a different threat model with
-different mitigations, outside what this specific architecture is
-built to solve.
 
 ### Conclusion: a pattern's name is not its guarantee
 
